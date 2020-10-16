@@ -1,7 +1,9 @@
 from flask import Flask, request, make_response, jsonify, session
 from openpyxl import Workbook, load_workbook
 import json
+from flask_cors import CORS
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/get_data', methods=['GET'])
 def getData():
