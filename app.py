@@ -7,6 +7,7 @@ CORS(app)
 
 pidSimDict = {}
 pidTheoryDict = {}
+pidFlagDict = {}
 theories = ["deontology", "consequentialism", "virtue ethics"]
 NUMQUESTIONS = 10 
 
@@ -28,6 +29,7 @@ def getData():
         pidSimDict[pid] = Ethical_Sim(NUMQUESTIONS)
         random.seed()
         pidTheoryDict[pid] = theories[random.randint(0, 2)]
+        pidFlagDict[pid] = False
     return make_response(jsonify(pidSimDict[pid].dilemmasDone[-1])), 200
 
 @app.route('/post_response', methods=['POST'])
@@ -60,17 +62,25 @@ def postResponse():
                     'message': 'Malformed parameters.'
                 }
             return make_response(jsonify(responseObject)), 401
-        choice = 0 if int(request.args.get('aggregateSliderPos')) <= 0 else 1
-        print("\n", choice, "\n")
-        pidSimDict[pid].makeNextDilemma(pidSimDict[pid].dilemmasDone[-1]["id"], choice)
+        if pidFlagDict[pid]:
+            choice = 0 if int(request.args.get('aggregateSliderPos')) <= 0 else 1
+            print("\n", choice, "\n")
+            pidSimDict[pid].makeNextDilemma(pidSimDict[pid].dilemmasDone[-1]["id"], choice)
+            responseObject = {
+                        'status': 'success',
+                        'data': pidSimDict[pid].dilemmasDone[-1]
+                    }
+        else:
+            responseObject = {
+                        'status': 'success',
+                        'data': 'Data recorded'
+                    }
+        pidFlagDict[pid] = not pidFlagDict[pid]
         with open('responses.csv', 'a', newline='\n') as i:
             writer = csv.writer(i)
             writer.writerow(entry)
 
-    responseObject = {
-                        'status': 'success',
-                        'data': pidSimDict[pid].dilemmasDone[-1]
-                    }
+    
     return make_response(jsonify(responseObject)), 200
 
 @app.route('/')
