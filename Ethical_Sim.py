@@ -1,3 +1,7 @@
+#Simulation file for actual task running and loading.
+#Currently used for AI training but can easily be used for the user system. 
+
+#General inputs, don't need anything special
 import random
 import json
 import sys
@@ -5,26 +9,70 @@ import numpy as np
 import copy
 
 class Ethical_Sim:
-    dilemmas = [] #Dilemmas that the player will tackle
+    #Gifts and the "values" associated with those gifts, mostly concerned with orderly.
     gifts = ["A Hat", "A Board Game", "A Sweater", "A Bike", "A Computer"]
     gift_values = [0.2, 0.4, 0.6, 0.8, 1]
-    dilemmasDone = [] #Dilemma list the player traversed
+
+    #General count of dilemmas, probably should move
+    DILEMMA_COUNT = 7
+
+    #I edit this, but I don't think it's ever used 
     QUESTION_COUNT = None #Number of questions we want to ask
+
+    #Modifiers for different possible values
     modifierTypes = ("P_Number", "T_Number", "H_Percent", "M_Percent", "L_Percent", "Result", "Gift")
+    
+    #relationship types, values are more concerned with order rather than true value
     relations = ("Family Member(s)", "Friend(s)", "Stranger(s)")
     relation_values = [1,0.5,0]
+
+    #General results of complication to imply severity values
     results = ["Dead", "In Pain"]
     results_values = [1,0.5]
-    #AGE Modifiers?
 
     def __init__(self, questionCount):
+        #Get teh dilemma stuff from the json file
         json_array = json.load(open("Dilemna.json"))
         self.QUESTION_COUNT = questionCount
-
         #Load list of dilemmas into memory
         self.dilemmas = []
         self.dilemmasDone = []
+        self.flipIndex = []
         for item in json_array:
+            self.flipIndex.append(random.randint(0,1))
+            #Multi-Target Size 38
+            #item['target_0'] = [random.randint(0,self.DILEMMA_COUNT-1),random.randint(0,self.DILEMMA_COUNT-1)]
+            #item['target_1'] = [random.randint(0,self.DILEMMA_COUNT-1),random.randint(0,self.DILEMMA_COUNT-1)]
+            possible_targets = [0,1,2,3,4,5,6]
+            possible_targets.remove(int(item['id']))
+            #Single Targets, Size 24
+            item['target_0'] = [random.choice(possible_targets)]
+            item['target_1'] = [random.choice(possible_targets)]
+            if self.flipIndex[-1]:
+                swap = item['Option_1']
+                item['Option_1'] = item['Option_0']
+                item['Option_0'] = swap
+                
+                swap = item['util_values_1'].copy()
+                item['util_values_1'] = item['util_values_0'].copy()                
+                item['util_values_0'] = swap.copy()
+
+                swap = item['deon_values_1'].copy()
+                item['deon_values_1'] = item['deon_values_0'].copy()
+                item['deon_values_0'] = swap.copy()
+
+                swap = item['deon_mods_1'].copy()
+                item['deon_mods_1'] = item['deon_mods_0'].copy()
+                item['deon_mods_0'] = swap.copy()
+
+                swap = item['virtue_values_1'].copy()
+                item['virtue_values_1'] = item['virtue_values_0'].copy()
+                item['virtue_values_0'] = swap.copy()
+    
+                swap = item['virtue_mods_1'].copy()
+                item['virtue_mods_1'] = item['virtue_mods_0'].copy()
+                item['virtue_mods_0'] = swap.copy()
+
             self.dilemmas.append(item)
 
         #Generate initial node randomly
@@ -53,9 +101,13 @@ class Ethical_Sim:
                 node["Modifiers"].append(random.choice(self.results))
             elif mod == self.modifierTypes[6]: #Gift
                 node["Modifiers"].append(random.choice(self.gifts))
+            if mod == self.modifierTypes[2] or mod == self.modifierTypes[3] or mod == self.modifierTypes[4]:
+                sub = int(node["Modifiers"][-1] + 100)
+            else:
+                sub = str(node["Modifiers"][-1])
             node["Description"] = node["Description"].replace("[M"+str(ind)+"]", str(node["Modifiers"][-1]))
         
-        
+        #Generate the relationships in values 
         for relation in range(0, node["Relation_Count"]):
             node["Relationships"].append(random.choice(self.relations))
             node["Description"] = node["Description"].replace("[relation_"+str(relation)+"]", node["Relationships"][-1])
@@ -76,33 +128,48 @@ class Ethical_Sim:
         numer_2 = 0
         base = []
         mul = []
+        #Calculated the numerical values for decision 0
         for value in dilemma['util_values_0']:
+            #General Modifier
             if value[0] == "M":
                 temp = int(value[1:])
                 temp_type = dilemma['Modifier_Types'][temp]
+                
+                #Sub in gift value
                 if temp_type == "Gift":
                     gift = dilemma['Modifiers'][temp]
                     gift = self.gifts.index(gift)
                     base.append(self.gift_values[gift])
+
+                #Sub in Result values, (dead or in pain)
                 elif temp_type == "Result":
                     res = dilemma['Modifiers'][temp]
                     res = self.results.index(res)
                     base.append(self.results_values[res])
+
+                #These are generally the people, count, or percent values
                 else:
                     base.append(dilemma['Modifiers'][int(value[1:])])
                 mul.append(1)
+
+            #Scaler Modifier
             elif value[0] == "X":
                 if len(value[1:]) > 0:
                     mul[-1] = float(value[1:])
                 else:
                     mul[-1] = dilemma['Modifiers'][int(value[1:])]
+            #Raw input values, not variable
             else:
                 base.append(float(value))
                 mul.append(1)
+        
+        #Calculate the actual numerator including the scaler values used.
         for i in range(len(base)):  
             numer_1 += base[i] * mul[i]
         base = []
         mul = []
+
+        #Same comments as above, but for decision 1
         for value in dilemma['util_values_1']:
             if value[0] == "M":
                 temp = int(value[1:])
@@ -129,13 +196,25 @@ class Ethical_Sim:
         for i in range(len(base)):
             numer_2 += base[i] * mul[i]
 
+        #In the rare case you get two zeros, give it a 0
         if numer_1 == 0 and numer_2 == 0:
             return 0
 
+        #Calculate the actual reward, we do division for scaling, may want to change this.
         if not decision: #decision 0
             return numer_1 / (numer_1 + numer_2)
+        #    if numer_1 >= numer_2:
+        #        return numer_1 / (numer_1 + numer_2)
+        #    else:
+        #        return numer_1 / (numer_1 + numer_2) 
+        #    return int(numer_1 > numer_2) 
         else: #decision 1
             return numer_2 / (numer_1 + numer_2)
+        #    if numer_2 >= numer_1:
+        #        return numer_1 / (numer_1 + numer_2)
+        #    else:
+        #        return numer_2 / (numer_1 + numer_2) 
+        #    return int(numer_2 > numer_1)
 
     #The deontology reward is based on a strict act based deontology where 
     #hard rules are set and not broken. These are scored with 0 for break
@@ -151,18 +230,26 @@ class Ethical_Sim:
         numer_2 = 0
         num_1_count = 0
         num_2_count = 0
+
+        #Subbing in deon pass or fails for decision 0
         for value in dilemma['deon_values_0']:
             if value != -1:
                 numer_1 += float(value)
                 num_1_count += 1
+
+        #Subbing in deon pass or fails for decision 1
         for value in dilemma['deon_values_1']:
             if value != -1:
                 numer_2 += float(value)
                 num_2_count += 1
+
+        #Calculate, may want to scale over binary decision
         if not decision:
             return numer_1 / num_1_count
+        #    return int(numer_1 > numer_2)
         else:
             return numer_2 / num_2_count
+        #    return int(numer_2 > numer_1)
 
 
     #Virtues ethics are based on common virtues that are seen in humans.  While 
@@ -180,6 +267,8 @@ class Ethical_Sim:
         count = 0
         num_1_count = 0
         num_2_count = 0
+
+        #Sub in the variable values for virtues, mainly relationships
         for value in dilemma['virtue_values_0']:
             if value == -1:
                 continue
@@ -213,9 +302,12 @@ class Ethical_Sim:
                 num_2_count += 1
         if not decision:
             return numer_1 / num_1_count
+        #    return int(numer_1 > numer_2)
         else:
             return numer_2 / num_1_count
+        #    return int(numer_2 > numer_1)
 
+    #General reward choice function, here to make other code cleaner
     def reward(self, theory, choice):
         if theory == "util":
             return self.utilitarianReward(self.dilemmasDone[-1], choice)
@@ -224,6 +316,7 @@ class Ethical_Sim:
         else:
             return self.virtueEthicsReward(self.dilemmasDone[-1], choice)
 
+    #return the rules array for the input layer
     def get_rules(self):
         ret = []
         for dilemma in self.dilemmas:
@@ -231,11 +324,13 @@ class Ethical_Sim:
             ret.append(dilemma['target_1'])
         return ret
     
+    #return the state for the input layer of the AI
     def state(self):
         ret = []
         ret.append(self.dilemmasDone[-1]["id"]) # add ID,1
-        modifiers = [-1] * 6 # blank, read in next modifiers,5
-        
+        ret.append(self.flipIndex[int(self.dilemmasDone[-1]["id"])])
+        #drop in modifiers
+        modifiers = [-1] * 6 # blank, read in next modifiers,6
         for ind,modifier in enumerate(self.dilemmasDone[-1]["Modifiers"]):
             if modifier in self.gifts:
                 value = self.gifts.index(modifier)
@@ -250,6 +345,7 @@ class Ethical_Sim:
                 modifiers[ind] = value
         ret.append(modifiers)    
 
+        #drop in relationships values
         relationships = [-1] * 3 #blank, read in relation values,3 
         for ind, rel in enumerate(self.dilemmasDone[-1]["Relationships"]):
             value = self.relations.index(rel)
@@ -258,6 +354,8 @@ class Ethical_Sim:
         ret.append(relationships)
         ret.append([item for sublist in self.get_rules() for item in sublist]) # add ruleset, 24
         ret_flat = []
+
+        #compress to a flat array for input
         for row in ret:
             if isinstance(row, list):
                 for item in row:
@@ -266,6 +364,3 @@ class Ethical_Sim:
                 ret_flat.append(float(row))
         return ret_flat
     
-#sim = Ethical_Sim(20)
-#sim.makeNextDilemma(sim.dilemmasDone[-1]["id"],0)
-#print(sim.state())

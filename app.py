@@ -30,7 +30,12 @@ def getData():
         random.seed()
         pidTheoryDict[pid] = theories[random.randint(0, 2)]
         pidFlagDict[pid] = False
-    return make_response(jsonify(pidSimDict[pid].dilemmasDone[-1])), 200
+        responseObject = {
+            'status': 'success',
+            'data': pidSimDict[pid].dilemmasDone[-1],
+            'ruleset': pidSimDict[pid].get_rules()
+        }
+    return make_response(responseObject), 200
 
 @app.route('/post_response', methods=['POST'])
 def postResponse():
@@ -52,10 +57,8 @@ def postResponse():
             entry.append(request.args.get('aiSliderPos'))
             #target values (0 left, 0 right, 1 left, 1 right)
             print(pidSimDict[pid].dilemmasDone)
-            entry.append(pidSimDict[pid].dilemmasDone[-1]["target_0"][0])
-            entry.append(pidSimDict[pid].dilemmasDone[-1]["target_0"][1])
-            entry.append(pidSimDict[pid].dilemmasDone[-1]["target_1"][0])
-            entry.append(pidSimDict[pid].dilemmasDone[-1]["target_1"][1])
+            entry.append(pidSimDict[pid].dilemmasDone[-1]["target_0"])
+            entry.append(pidSimDict[pid].dilemmasDone[-1]["target_1"])
         except:
             responseObject = {
                     'status': 'fail',
