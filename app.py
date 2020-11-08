@@ -28,8 +28,7 @@ def getData():
             return make_response(jsonify(responseObject)), 401
         
         pidSimDict[pid] = Ethical_Sim(NUMQUESTIONS)
-
-        pidTheoryDict[pid] = theories[random.randint(0, 2)]
+        pidTheoryDict[pid] = int(condition)
         pidFlagDict[pid] = False
         responseObject = {
             'status': 'success',

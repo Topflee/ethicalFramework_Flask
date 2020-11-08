@@ -320,8 +320,8 @@ class Ethical_Sim:
     def get_rules(self):
         ret = []
         for dilemma in self.dilemmas:
-            ret.append(dilemma['target_0'])
-            ret.append(dilemma['target_1'])
+            ret.append([dilemma['target_0'][0],dilemma['target_1'][0]])
+            #ret.append(dilemma['target_1'])
         return ret
     
     #return the state for the input layer of the AI
