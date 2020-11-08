@@ -18,6 +18,7 @@ NUMQUESTIONS = 10
 def getData():
     if request.method == 'GET':
         pid             = request.args.get('pid')
+        condition       = request.args.get('condition')
 
         if not pid:
             responseObject = {
@@ -27,7 +28,7 @@ def getData():
             return make_response(jsonify(responseObject)), 401
         
         pidSimDict[pid] = Ethical_Sim(NUMQUESTIONS)
-        random.seed()
+
         pidTheoryDict[pid] = theories[random.randint(0, 2)]
         pidFlagDict[pid] = False
         responseObject = {
