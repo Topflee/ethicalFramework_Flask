@@ -2,15 +2,36 @@ from flask import Flask, request, make_response, jsonify, session
 import json, csv, random
 from flask_cors import CORS
 from Ethical_Sim import Ethical_Sim
+from tensorforce.agents import Agent
+from tensorforce.environments import Environment
+import cenv
+
 app = Flask(__name__)
 CORS(app)
 
 pidSimDict = {}
 pidTheoryDict = {}
 pidFlagDict = {}
-theories = ["deontology", "consequentialism", "virtue ethics"]
 NUMQUESTIONS = 10 
 
+environment = Environment.create(
+    environment='cenv.CustomEnvironment', max_episode_timesteps=100
+)
+
+util_agent = Agent.load(directory='./util_agent', format='numpy', environment=environment)
+
+deon_agent = Agent.load(directory='./deon_agent', format='numpy', environment=environment)
+
+virtue_agent = Agent.load(directory='./virtue_agent', format='numpy', environment=environment)
+
+agents = [util_agent, deon_agent, virtue_agent]
+
+#############################33
+## Agent Actions          #####
+## User_sim = specific user's codnition from dictionary
+## User_agent = agents[user_condition - 1]
+## actions = User_agent.act(states=User_sim.state(), independent=True, deterministic=True)
+##############################
 
 # The site needs to send the pid
 # Intializes sim for the particular user
