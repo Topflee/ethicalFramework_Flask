@@ -2,9 +2,9 @@ from flask import Flask, request, make_response, jsonify, session
 import json, csv, random
 from flask_cors import CORS
 from Ethical_Sim import Ethical_Sim
-from tensorforce.agents import Agent
-from tensorforce.environments import Environment
-import cenv
+#from tensorforce.agents import Agent
+#from tensorforce.environments import Environment
+#import cenv
 
 app = Flask(__name__)
 CORS(app)
@@ -13,7 +13,7 @@ pidSimDict = {}
 pidTheoryDict = {}
 pidFlagDict = {}
 NUMQUESTIONS = 10 
-
+"""
 environment = Environment.create(
     environment='cenv.CustomEnvironment', max_episode_timesteps=100
 )
@@ -25,7 +25,7 @@ deon_agent = Agent.load(directory='./deon_agent', format='numpy', environment=en
 virtue_agent = Agent.load(directory='./virtue_agent', format='numpy', environment=environment)
 
 agents = [util_agent, deon_agent, virtue_agent]
-
+"""
 #############################33
 ## Agent Actions          #####
 ## User_sim = specific user's codnition from dictionary
@@ -77,7 +77,6 @@ def postResponse():
             entry.append(request.args.get('aggregateSliderPos'))
             entry.append(request.args.get('aiSliderPos'))
             #target values (0 left, 0 right, 1 left, 1 right)
-            print(pidSimDict[pid].dilemmasDone)
             entry.append(pidSimDict[pid].dilemmasDone[-1]["target_0"])
             entry.append(pidSimDict[pid].dilemmasDone[-1]["target_1"])
         except:
@@ -86,6 +85,8 @@ def postResponse():
                     'message': 'Malformed parameters.'
                 }
             return make_response(jsonify(responseObject)), 401
+        print(pidFlagDict[pid])
+
         if pidFlagDict[pid]:
             choice = 0 if int(request.args.get('aggregateSliderPos')) <= 0 else 1
             print("\n", choice, "\n")
