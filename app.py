@@ -2,9 +2,9 @@ from flask import Flask, request, make_response, jsonify, session
 import json, csv, random
 from flask_cors import CORS
 from Ethical_Sim import Ethical_Sim
-#from tensorforce.agents import Agent
-#from tensorforce.environments import Environment
-#import cenv
+from tensorforce.agents import Agent
+from tensorforce.environments import Environment
+import cenv
 
 app = Flask(__name__)
 CORS(app)
@@ -13,7 +13,7 @@ pidSimDict = {}
 pidTheoryDict = {}
 pidFlagDict = {}
 NUMQUESTIONS = 10 
-"""
+
 environment = Environment.create(
     environment='cenv.CustomEnvironment', max_episode_timesteps=100
 )
@@ -25,7 +25,7 @@ deon_agent = Agent.load(directory='./deon_agent', format='numpy', environment=en
 virtue_agent = Agent.load(directory='./virtue_agent', format='numpy', environment=environment)
 
 agents = [util_agent, deon_agent, virtue_agent]
-"""
+
 #############################33
 ## Agent Actions          #####
 ## User_sim = specific user's codnition from dictionary
@@ -54,7 +54,8 @@ def getData():
         responseObject = {
             'status': 'success',
             'data': pidSimDict[pid].dilemmasDone[-1],
-            'ruleset': pidSimDict[pid].get_rules()
+            'ruleset': pidSimDict[pid].get_rules(),
+            'ai': agents[pidTheoryDict[pid] - 1].act(states=pidSimDict[pid].state(), independent=True, deterministic=True)
         }
     return make_response(responseObject), 200
 
@@ -93,7 +94,8 @@ def postResponse():
             pidSimDict[pid].makeNextDilemma(pidSimDict[pid].dilemmasDone[-1]["id"], choice)
             responseObject = {
                         'status': 'success',
-                        'data': pidSimDict[pid].dilemmasDone[-1]
+                        'data': pidSimDict[pid].dilemmasDone[-1],
+                        'ai': agents[pidTheoryDict[pid] - 1].act(states=pidSimDict[pid].state(), independent=True, deterministic=True)
                     }
         else:
             responseObject = {
