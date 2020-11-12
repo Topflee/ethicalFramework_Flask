@@ -89,12 +89,12 @@ def postResponse():
         if pidFlagDict[pid]:
             choice = 0 if int(request.args.get('aggregateSliderPos')) <= 0 else 1
             pidSimDict[pid].makeNextDilemma(pidSimDict[pid].dilemmasDone[-1]["id"], choice)
-            teammateResponse =  agents[pidTheoryDict[pid] - 1].act(states=pidSimDict[pid].state(), independent=True, deterministic=True)
             responseObject = {
                         'status': 'success',
                         'data': pidSimDict[pid].dilemmasDone[-1]
                     }
         else:
+            teammateResponse =  agents[pidTheoryDict[pid] - 1].act(states=pidSimDict[pid].state(), independent=True, deterministic=True)
             responseObject = {
                         'status': 'success',
                         'data': 'Data recorded',
