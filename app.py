@@ -55,7 +55,6 @@ def getData():
             'status': 'success',
             'data': pidSimDict[pid].dilemmasDone[-1],
             'ruleset': pidSimDict[pid].get_rules(),
-            'ai': agents[pidTheoryDict[pid] - 1].act(states=pidSimDict[pid].state(), independent=True, deterministic=True)
         }
     return make_response(responseObject), 200
 
@@ -91,16 +90,16 @@ def postResponse():
             choice = 0 if int(request.args.get('aggregateSliderPos')) <= 0 else 1
             pidSimDict[pid].makeNextDilemma(pidSimDict[pid].dilemmasDone[-1]["id"], choice)
             teammateResponse =  agents[pidTheoryDict[pid] - 1].act(states=pidSimDict[pid].state(), independent=True, deterministic=True)
-            print(teammateResponse)
             responseObject = {
                         'status': 'success',
-                        'data': pidSimDict[pid].dilemmasDone[-1],
-                        'ai': teammateResponse
+                        'data': pidSimDict[pid].dilemmasDone[-1]
                     }
         else:
             responseObject = {
                         'status': 'success',
-                        'data': 'Data recorded'
+                        'data': 'Data recorded',
+                        'ai': teammateResponse
+
                     }
         pidFlagDict[pid] = not pidFlagDict[pid]
         with open('responses.csv', 'a', newline='\n') as i:
