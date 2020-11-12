@@ -86,16 +86,16 @@ def postResponse():
                     'message': 'Malformed parameters.'
                 }
             return make_response(jsonify(responseObject)), 401
-        print(pidFlagDict[pid])
 
         if pidFlagDict[pid]:
             choice = 0 if int(request.args.get('aggregateSliderPos')) <= 0 else 1
-            print("\n", choice, "\n")
             pidSimDict[pid].makeNextDilemma(pidSimDict[pid].dilemmasDone[-1]["id"], choice)
+            teammateResponse =  agents[pidTheoryDict[pid] - 1].act(states=pidSimDict[pid].state(), independent=True, deterministic=True)
+            print(teammateResponse)
             responseObject = {
                         'status': 'success',
                         'data': pidSimDict[pid].dilemmasDone[-1],
-                        'ai': agents[pidTheoryDict[pid] - 1].act(states=pidSimDict[pid].state(), independent=True, deterministic=True)
+                        'ai': teammateResponse
                     }
         else:
             responseObject = {
